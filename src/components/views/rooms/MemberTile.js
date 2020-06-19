@@ -31,7 +31,7 @@ export default createReactClass({
     propTypes: {
         member: PropTypes.any.isRequired, // RoomMember
         showPresence: PropTypes.bool,
-		'aria-selected': PropTypes.any,
+        'aria-selected': PropTypes.bool,
     },
 
     getDefaultProps: function() {
@@ -180,6 +180,11 @@ export default createReactClass({
         ) {
             return true;
         }
+
+        if (nextProps['aria-selected'] !== this.props['aria-selected']) {
+            return true;
+        }
+
         return false;
     },
 

@@ -70,7 +70,7 @@ const EntityTile = createReactClass({
         showPresence: PropTypes.bool,
         subtextLabel: PropTypes.string,
         e2eStatus: PropTypes.string,
-        'aria-selected': PropTypes.any,
+        'aria-selected': PropTypes.bool,
     },
 
     getDefaultProps: function() {

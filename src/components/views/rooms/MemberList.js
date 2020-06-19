@@ -44,12 +44,7 @@ export default createReactClass({
 
     getInitialState: function() {
         this.domId = `memberlist-${count++}`;
-		this.changeJoinedMemberFocus = this.changeMemberFocus.bind(
-			this, 'join'
-		);
-		this.changeInvitedMemberFocus = this.changeMemberFocus.bind(
-			this, 'invite'
-		);
+		this.changeMemberFocus = this.changeMemberFocus.bind(this);
 
 		const style = document.createElement('style');
 		style.appendChild(document.createTextNode(`
@@ -150,8 +145,7 @@ export default createReactClass({
         // taken into account while rerendering
         return {
             loading: false,
-			focusedMember_join: null,
-			focusedMember_invite: null,
+			focusedMemberId: null,
             members: members,
             filteredJoinedMembers: this._filterMembers(members, 'join'),
             filteredInvitedMembers: this._filterMembers(members, 'invite'),
@@ -164,12 +158,11 @@ export default createReactClass({
         };
     },
 
-	changeMemberFocus(membership, eventName) {
-		const members = this._filterMembers(this.state.members, membership);
-		const stateKey = `focusedMember_${membership}`;
-		const currentIndex = members.findIndex((member) => {
-			return this.state[stateKey] === this._memberId(member);
-		});
+	changeMemberFocus(eventName) {
+		const currentIndex = this.state.members.findIndex((member) =>
+			this._memberId(member) === this.state.focusedMemberId
+		);
+		const members = this._filterMembers(this.state.members, 'join');
 		let newIndex;
 
 		if (eventName === 'enter') {
@@ -191,9 +184,7 @@ export default createReactClass({
 			return;
 		}
 
-		this.setState({
-			[stateKey]: this._memberId(members[newIndex])
-		});
+		this.setState({ focusedMemberId: this._memberId(members[newIndex]) });
 	},
 
     onUserPresenceChange(event, user) {
@@ -461,15 +452,13 @@ export default createReactClass({
         const MemberTile = sdk.getComponent("rooms.MemberTile");
         const EntityTile = sdk.getComponent("rooms.EntityTile");
         const Tile = ({children, ...props}) => {
-			console.log('Tile', props.id, props['aria-selected']);
             return <div role="option" {...props}>{children}</div>;
         };
 
         return members.map((m) => {
 			const memberId = this._memberId(m);
 			const domId = `${this.domId}-${memberId.replace(/[^a-z0-9_-]/gi, '')}`;
-			const focused = this.state.focusedMember_join === memberId || null;
-			console.log('what', memberId, focused);
+			const focused = this.state.focusedMemberId === memberId || null;
             if (m.userId) {
                 // Is a Matrix invite
                 return <MemberTile id={domId}
@@ -561,7 +550,7 @@ export default createReactClass({
             <div className="mx_MemberList">
                 { inviteButton }
                 <AutoHideScrollbar>
-                    <ListBox onChange={this.changeJoinedMemberFocus}
+                    <ListBox onChange={this.changeMemberFocus}
 			                 className="mx_MemberList_wrapper">
                         <TruncatedList className="mx_MemberList_section mx_MemberList_joined" truncateAt={this.state.truncateAtJoined}
                             createOverflowElement={this._createOverflowTileJoined}
