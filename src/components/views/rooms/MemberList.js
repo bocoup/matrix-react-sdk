@@ -27,10 +27,13 @@ import rate_limited_func from "../../../ratelimitedfunc";
 import {MatrixClientPeg} from "../../../MatrixClientPeg";
 import * as sdk from "../../../index";
 import CallHandler from "../../../CallHandler";
+import ListBox from '../elements/ListBox';
 
 const INITIAL_LOAD_NUM_MEMBERS = 30;
 const INITIAL_LOAD_NUM_INVITED = 5;
 const SHOW_MORE_INCREMENT = 100;
+
+let count = 0;
 
 // Regex applied to filter our punctuation in member names before applying sort, to fuzzy it a little
 // matches all ASCII punctuation: !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
@@ -40,6 +43,15 @@ export default createReactClass({
     displayName: 'MemberList',
 
     getInitialState: function() {
+        this.domId = `memberlist-${count++}`;
+
+		const style = document.createElement('style');
+		style.appendChild(document.createTextNode(`
+		*:focus { outline: solid 3px red; }
+		[aria-selected] { background-color: blue; }
+		`));
+		document.body.appendChild(style);
+
         const cli = MatrixClientPeg.get();
         if (cli.hasLazyLoadMembersEnabled()) {
             // show an empty list
@@ -132,6 +144,7 @@ export default createReactClass({
         // taken into account while rerendering
         return {
             loading: false,
+			focusedMember: null,
             members: members,
             filteredJoinedMembers: this._filterMembers(members, 'join'),
             filteredInvitedMembers: this._filterMembers(members, 'invite'),
@@ -401,17 +414,33 @@ export default createReactClass({
         }
     },
 
+    _tileId: function(key) {
+        return `${this.domId}-${key.replace(/[^a-z0-9_-]/gi, '')}`;
+    },
+
     _makeMemberTiles: function(members) {
         const MemberTile = sdk.getComponent("rooms.MemberTile");
         const EntityTile = sdk.getComponent("rooms.EntityTile");
+        const Tile = ({children, ...props}) => {
+            return <div role="option" {...props}>{children}</div>;
+        };
 
         return members.map((m) => {
             if (m.userId) {
                 // Is a Matrix invite
-                return <MemberTile key={m.userId} member={m} ref={m.userId} showPresence={this._showPresence} />;
+                return <MemberTile id={this._tileId(m.userId)}
+                                   Tile={Tile}
+                                   key={m.userId}
+                                   member={m}
+                                   ref={m.userId}
+                                   showPresence={this._showPresence} />;
             } else {
                 // Is a 3pid invite
-                return <EntityTile key={m.getStateKey()} name={m.getContent().display_name} suppressOnHover={true}
+                const key = m.getStateKey();
+                return <EntityTile id={this._tileId(key)}
+                                   key={key}
+                                   name={m.getContent().display_name}
+                                   suppressOnHover={true}
                                    onClick={() => this._onPending3pidInviteClick(m)} />;
             }
         });
@@ -483,17 +512,17 @@ export default createReactClass({
         }
 
         return (
-            <div className="mx_MemberList" role="tabpanel">
+            <div className="mx_MemberList">
                 { inviteButton }
                 <AutoHideScrollbar>
-                    <div className="mx_MemberList_wrapper">
+                    <ListBox className="mx_MemberList_wrapper">
                         <TruncatedList className="mx_MemberList_section mx_MemberList_joined" truncateAt={this.state.truncateAtJoined}
                             createOverflowElement={this._createOverflowTileJoined}
                             getChildren={this._getChildrenJoined}
                             getChildCount={this._getChildCountJoined} />
                         { invitedHeader }
                         { invitedSection }
-                    </div>
+                    </ListBox>
                 </AutoHideScrollbar>
 
                 <SearchBox className="mx_MemberList_query mx_textinput_icon mx_textinput_search"

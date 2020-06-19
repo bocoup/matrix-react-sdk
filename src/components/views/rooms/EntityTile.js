@@ -178,11 +178,13 @@ const EntityTile = createReactClass({
         const av = this.props.avatarJsx ||
             <BaseAvatar name={this.props.name} width={36} height={36} aria-hidden="true" />;
 
+		const Tile = this.props.Tile || AccessibleButton;
         // The wrapping div is required to make the magic mouse listener work, for some reason.
         return (
             <div ref={(c) => this.container = c} >
-                <AccessibleButton className={classNames(mainClassNames)} title={this.props.title}
-                                  onClick={this.props.onClick}>
+                <Tile className={classNames(mainClassNames)} title={this.props.title}
+			          id={this.props.id || null}
+                      onClick={this.props.onClick}>
                     <div className="mx_EntityTile_avatar">
                         { av }
                         { e2eIcon }
@@ -190,7 +192,7 @@ const EntityTile = createReactClass({
                     { nameEl }
                     { powerLabel }
                     { inviteButton }
-                </AccessibleButton>
+                </Tile>
             </div>
         );
     },
