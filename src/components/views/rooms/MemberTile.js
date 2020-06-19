@@ -31,6 +31,7 @@ export default createReactClass({
     propTypes: {
         member: PropTypes.any.isRequired, // RoomMember
         showPresence: PropTypes.bool,
+		'aria-selected': PropTypes.any,
     },
 
     getDefaultProps: function() {

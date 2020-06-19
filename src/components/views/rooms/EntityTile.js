@@ -70,6 +70,7 @@ const EntityTile = createReactClass({
         showPresence: PropTypes.bool,
         subtextLabel: PropTypes.string,
         e2eStatus: PropTypes.string,
+        'aria-selected': PropTypes.any,
     },
 
     getDefaultProps: function() {
@@ -184,6 +185,7 @@ const EntityTile = createReactClass({
             <div ref={(c) => this.container = c} >
                 <Tile className={classNames(mainClassNames)} title={this.props.title}
 			          id={this.props.id || null}
+					  aria-selected={this.props['aria-selected']}
                       onClick={this.props.onClick}>
                     <div className="mx_EntityTile_avatar">
                         { av }

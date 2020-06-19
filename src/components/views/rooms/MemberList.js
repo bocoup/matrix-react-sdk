@@ -44,6 +44,12 @@ export default createReactClass({
 
     getInitialState: function() {
         this.domId = `memberlist-${count++}`;
+		this.changeJoinedMemberFocus = this.changeMemberFocus.bind(
+			this, 'join'
+		);
+		this.changeInvitedMemberFocus = this.changeMemberFocus.bind(
+			this, 'invite'
+		);
 
 		const style = document.createElement('style');
 		style.appendChild(document.createTextNode(`
@@ -144,7 +150,8 @@ export default createReactClass({
         // taken into account while rerendering
         return {
             loading: false,
-			focusedMember: null,
+			focusedMember_join: null,
+			focusedMember_invite: null,
             members: members,
             filteredJoinedMembers: this._filterMembers(members, 'join'),
             filteredInvitedMembers: this._filterMembers(members, 'invite'),
@@ -156,6 +163,38 @@ export default createReactClass({
             searchQuery: "",
         };
     },
+
+	changeMemberFocus(membership, eventName) {
+		const members = this._filterMembers(this.state.members, membership);
+		const stateKey = `focusedMember_${membership}`;
+		const currentIndex = members.findIndex((member) => {
+			return this.state[stateKey] === this._memberId(member);
+		});
+		let newIndex;
+
+		if (eventName === 'enter') {
+			if (currentIndex > -1) {
+				return;
+			}
+			newIndex = 0;
+		} else if (eventName === 'next') {
+			newIndex = currentIndex + 1;
+		} else if (eventName === 'previous') {
+			newIndex = currentIndex - 1;
+		} else if (eventName === 'first') {
+			newIndex = 0;
+		} else if (eventName === 'last') {
+			newIndex = members.length - 1;
+		}
+
+		if (!members[newIndex]) {
+			return;
+		}
+
+		this.setState({
+			[stateKey]: this._memberId(members[newIndex])
+		});
+	},
 
     onUserPresenceChange(event, user) {
         // Attach a SINGLE listener for global presence changes then locate the
@@ -414,31 +453,38 @@ export default createReactClass({
         }
     },
 
-    _tileId: function(key) {
-        return `${this.domId}-${key.replace(/[^a-z0-9_-]/gi, '')}`;
+    _memberId: function(member) {
+		return member.userId ? member.userId : member.getStateKey();
     },
 
     _makeMemberTiles: function(members) {
         const MemberTile = sdk.getComponent("rooms.MemberTile");
         const EntityTile = sdk.getComponent("rooms.EntityTile");
         const Tile = ({children, ...props}) => {
+			console.log('Tile', props.id, props['aria-selected']);
             return <div role="option" {...props}>{children}</div>;
         };
 
         return members.map((m) => {
+			const memberId = this._memberId(m);
+			const domId = `${this.domId}-${memberId.replace(/[^a-z0-9_-]/gi, '')}`;
+			const focused = this.state.focusedMember_join === memberId || null;
+			console.log('what', memberId, focused);
             if (m.userId) {
                 // Is a Matrix invite
-                return <MemberTile id={this._tileId(m.userId)}
+                return <MemberTile id={domId}
+								   aria-selected={focused}
                                    Tile={Tile}
-                                   key={m.userId}
+                                   key={memberId}
                                    member={m}
                                    ref={m.userId}
                                    showPresence={this._showPresence} />;
             } else {
                 // Is a 3pid invite
-                const key = m.getStateKey();
-                return <EntityTile id={this._tileId(key)}
-                                   key={key}
+                return <EntityTile id={domId}
+								   aria-selected={focused}
+				                   Tile={Tile}
+                                   key={memberId}
                                    name={m.getContent().display_name}
                                    suppressOnHover={true}
                                    onClick={() => this._onPending3pidInviteClick(m)} />;
@@ -515,7 +561,8 @@ export default createReactClass({
             <div className="mx_MemberList">
                 { inviteButton }
                 <AutoHideScrollbar>
-                    <ListBox className="mx_MemberList_wrapper">
+                    <ListBox onChange={this.changeJoinedMemberFocus}
+			                 className="mx_MemberList_wrapper">
                         <TruncatedList className="mx_MemberList_section mx_MemberList_joined" truncateAt={this.state.truncateAtJoined}
                             createOverflowElement={this._createOverflowTileJoined}
                             getChildren={this._getChildrenJoined}
